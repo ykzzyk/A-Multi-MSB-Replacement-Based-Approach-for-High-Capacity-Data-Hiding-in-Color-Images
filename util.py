@@ -4,6 +4,16 @@ import numpy as np  # Import Numpy
 import pickle  # Store the key1
 import os  # Generate cryptographically secure RNG: os.urandom()
 import sys  # Import sys
+from operator import xor
+
+
+def sepearte_RGB_channels(image):
+    red, green, blue = Image.open(image).convert('RGB').split()
+    r = np.array(red)
+    g = np.array(green)
+    b = np.array(blue)
+
+    return r, g, b
 
 
 def user_input():
@@ -20,25 +30,32 @@ def load_key1():
     # load key1 from pickle
     with open('key1.pickle', 'rb') as f:
         keystream = pickle.load(f)
-    return np.array(keystream).reshape(512, 512)
+    return np.array(keystream)
 
 
 def image_encryption(pixels):
     """Image Encryption"""
     # Image Encryption
     keystream = []  # Store keys
-    for i in range(0, 512):
-        for j in range(0, 512):
-            key = int.from_bytes(os.urandom(1), byteorder=sys.byteorder)  # Generate cryptographically secure RNG key
-            pixels[i, j] ^= key  # Do a bitwise XOR operation to encrypt image
-            keystream.append(key)  # Append keys
+    for idx in range(0, 512 * 512):
+        # Generate cryptographically secure RNG key
+        k1 = int.from_bytes(os.urandom(1), byteorder=sys.byteorder)
+        k2 = int.from_bytes(os.urandom(1), byteorder=sys.byteorder)
+        k3 = int.from_bytes(os.urandom(1), byteorder=sys.byteorder)
+        key = [k1, k2, k3]
+
+        # Do a bitwise XOR operation to encrypt image
+        pixels[idx] = list(map(xor, pixels[idx], key))
+
+        # Append keys
+        keystream.append(key)
 
     # Stroe key1 in pickle
     with open('key1.pickle', 'wb') as f:
         pickle.dump(keystream, f, pickle.HIGHEST_PROTOCOL)
 
 
-def embed_base_MSB(bit_plane, pixels, msb):
+def embed_optimal_MSB(bit_plane, pixels, msb):
     if bit_plane == 'lsb_plane':
         pixels = pixels.flatten()
         for k, v in enumerate(bin(msb)[2:].zfill(3)):
@@ -56,7 +73,7 @@ def embed_base_MSB(bit_plane, pixels, msb):
                 pixels[-1 - k] &= 127
 
 
-def extract_base_MSB(bit_plane, pixels):
+def extract_optimal_MSB(bit_plane, pixels):
     pixels = pixels.flatten()
     if bit_plane == 'lsb_plane':
         msb = int(''.join([str(pixels[-1 - i] & 1) for i in range(3)]), 2)
@@ -66,11 +83,11 @@ def extract_base_MSB(bit_plane, pixels):
     return msb
 
 
-def embed_map(bit_plane, pixels, genre, name):
+def embed_map(bit_plane, pixels, genre, channel, name):
     if bit_plane == 'lsb_plane':
         pixels = pixels.flatten()
         """Embedding map to LSB"""
-        to_bytes = open(f'../../Output/TEMP/{genre}_generate_{name}_map.jbg', 'rb').read()
+        to_bytes = open(f'../../Output/TEMP/{genre}_generate_{channel}_{name}_map.jbg', 'rb').read()
         to_bits = bin(int.from_bytes(to_bytes, byteorder=sys.byteorder))[2:]
         for i in range(len(to_bits)):
             if to_bits[i] == '1':
@@ -82,7 +99,7 @@ def embed_map(bit_plane, pixels, genre, name):
 
     else:
         """Embedding map to MSB"""
-        to_bytes = open(f'../../Output/TEMP/{genre}_generate_{name}_map.jbg', 'rb').read()
+        to_bytes = open(f'../../Output/TEMP/{genre}_generate_{channel}_{name}_map.jbg', 'rb').read()
         to_bits = bin(int.from_bytes(to_bytes, byteorder=sys.byteorder))[2:]
         for i in range(len(to_bits)):
             if to_bits[i] == '1':
@@ -91,18 +108,18 @@ def embed_map(bit_plane, pixels, genre, name):
                 pixels[i] &= 127
 
 
-def map_compression(target, genre, name):
+def map_compression(target, genre, channel, name):
     np.set_printoptions(threshold=sys.maxsize)
     target = str(target.flatten()).replace('[', ' ').replace(']', ' ')
 
-    with open(f'../../Output/TEMP/{genre}_write_in_{name}_map.pbm', 'w+') as f:
+    with open(f'../../Output/TEMP/{genre}_write_in_{channel}_{name}_map.pbm', 'w+') as f:
         f.write(f'P1\n512\n512\n\n{target}')
 
-    call(['../.././pbmtojbg', '-q', f'../../Output/TEMP/{genre}_write_in_{name}_map.pbm',
-          f'../../Output/TEMP/{genre}_generate_{name}_map.jbg'])
+    call(['../.././pbmtojbg', '-q', f'../../Output/TEMP/{genre}_write_in_{channel}_{name}_map.pbm',
+          f'../../Output/TEMP/{genre}_generate_{channel}_{name}_map.jbg'])
 
     # Check the map size
-    map_size = os.stat(f'../../Output/TEMP/{genre}_generate_{name}_map.jbg').st_size * 8 - 6
+    map_size = os.stat(f'../../Output/TEMP/{genre}_generate_{channel}_{name}_map.jbg').st_size * 8 - 6
 
     # Return the size of map size
     return map_size
@@ -132,7 +149,7 @@ def embed_size_info(bit_plane, pixels, file_size):
                 pixels[-i - 1] &= 127
 
 
-def map_extraction(bit_plane, pixels, genre, name):
+def map_extraction(bit_plane, pixels, genre, channel, name):
     pixels = pixels.flatten()
     size = ''  # Get size info
     bits = ''  # Get bits info
@@ -167,13 +184,13 @@ def map_extraction(bit_plane, pixels, genre, name):
                                                                             byteorder=sys.byteorder)
 
     # Write the JBG file for decompressing
-    with open(f'../../Output/TEMP/{genre}_write_in_{name}_map.jbg', 'wb') as f:
+    with open(f'../../Output/TEMP/{genre}_write_in_{channel}_{name}_map.jbg', 'wb') as f:
         f.write(byte)
 
-    call(['../.././jbgtopbm', f'../../Output/TEMP/{genre}_write_in_{name}_map.jbg',
-          f'../../Output/TEMP/{genre}_generate_{name}_map.pbm'])
+    call(['../.././jbgtopbm', f'../../Output/TEMP/{genre}_write_in_{channel}_{name}_map.jbg',
+          f'../../Output/TEMP/{genre}_generate_{channel}_{name}_map.pbm'])
 
-    img = Image.open(f'../../Output/TEMP/{genre}_generate_{name}_map.pbm')
+    img = Image.open(f'../../Output/TEMP/{genre}_generate_{channel}_{name}_map.pbm')
     # Decompress the map
     extracted_map = np.invert(np.array(img)).astype('uint8')
 

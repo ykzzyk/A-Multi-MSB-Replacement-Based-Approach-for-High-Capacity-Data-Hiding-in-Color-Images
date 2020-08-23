@@ -5,6 +5,14 @@ import sys
 sys.path.append('../')
 import eval
 
+
+# pixel = Image.open('SanFrancisco.tiff').convert('RGB').getpixel((0, 0))
+# print(pixel)
+
+pixels = np.array(Image.open('SanFrancisco.tiff').convert('RGB').getdata())
+print(pixels)
+
+
 R, G, B = Image.open('SanFrancisco.tiff').convert('RGB').split()
 r = np.array(R)
 g = np.array(G)
