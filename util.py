@@ -169,7 +169,7 @@ def map_extraction(bit_plane, pixels, genre, channel, name):
 
     else:
         """Extract map from the most siginificant bits"""
-        size = "".join([str((pixels[-i] & 0x80) % 127) for i in range(4, 40)])
+        size = "".join([str((pixels[-i] & 0x80) % 127) for i in range(5, 41)])
 
         # Get the map size
         location_map_size = int(size[:18][::-1], 2)
