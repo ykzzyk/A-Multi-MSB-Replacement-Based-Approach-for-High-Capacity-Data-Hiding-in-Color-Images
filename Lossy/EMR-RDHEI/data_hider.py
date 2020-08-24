@@ -7,7 +7,7 @@ sys.path.append('../../')
 import util
 
 
-class hiding_data:
+class Hiding_data:
     def __init__(self, image):
         self.extract_info(image)
         self.data_hider()
@@ -50,4 +50,5 @@ class hiding_data:
         img.save('../../Output/EMR/EMR_RDHEI.ppm')
 
 
-dh = hiding_data('../../Output/EMR/EMR_EI.ppm')
+if __name__ == '__main__':
+    dh = Hiding_data('../../Output/EMR/EMR_EI.ppm')

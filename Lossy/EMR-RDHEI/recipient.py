@@ -1,8 +1,8 @@
 from PIL import Image  # Import Image from Pillow mudule
+from operator import xor
+import content_owner
 import numpy as np  # Import Numpy
 import random  # Import random module to generate random numbers
-from operator import xor
-
 import sys
 
 sys.path.append('../../')
@@ -10,8 +10,9 @@ import util
 import eval
 
 
-class receiver:
-    def __init__(self, image):
+class Receiver:
+    def __init__(self, image, original_image):
+        self.original_image = original_image
         self.extract_info(image)
         self.recipient('key1')
 
@@ -85,7 +86,7 @@ class receiver:
 
         if key == 'key1':
             self.image_reconstruction('../../Output/EMR/EMR_RDHEI.ppm')
-            eval.skimage_psnr('../../RGB/lena.ppm', 'EMR_R.ppm')
+            eval.skimage_psnr(self.original_image, 'EMR_R.ppm')
 
         elif key == 'key2':
             self.extract_message(self.r, self.r_msb, self.r_location_map)
@@ -100,7 +101,8 @@ class receiver:
 
             # Reconstruct image
             self.image_reconstruction('../../Output/EMR/EMR_RDHEI.ppm')
-            eval.skimage_psnr('../../RGB/lena.ppm', 'EMR_R.ppm')
+            eval.skimage_psnr(self.original_image, 'EMR_R.ppm')
 
 
-rc = receiver('../../Output/EMR/EMR_RDHEI.ppm')
+if __name__ == '__main__':
+    rc = Receiver('../../Output/EMR/EMR_RDHEI.ppm', content_owner.original_image)

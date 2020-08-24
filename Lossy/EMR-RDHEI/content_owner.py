@@ -1,15 +1,15 @@
 from PIL import Image  # Import Image from Pillow mudule
 import numpy as np  # Import Numpy
-import pickle  # Store the key1
-
 import sys
 
 sys.path.append('../../')
 import util
 from operator import xor
 
+original_image = '../../RGB/lena.ppm'
 
-class Content_owner:
+
+class Owner:
     def __init__(self, image):
         self.image_processing(image)
 
@@ -102,7 +102,7 @@ class Content_owner:
         e_g = util.embed_map('lsb_plane', e_g, 'loss', 'g', 'location')
         e_b = util.embed_map('lsb_plane', e_b, 'loss', 'b', 'location')
 
-        #Embed size of the location map into the last 18 least siginificant bits
+        # Embed size of the location map into the last 18 least siginificant bits
         e_r = util.embed_size_info('lsb_plane', e_r, r_location_map_size)
         e_g = util.embed_size_info('lsb_plane', e_g, g_location_map_size)
         e_b = util.embed_size_info('lsb_plane', e_b, b_location_map_size)
@@ -121,4 +121,5 @@ class Content_owner:
         img.save('../../Output/EMR/EMR_EI.ppm')
 
 
-co = Content_owner('../../RGB/lena.ppm')
+if __name__ == '__main__':
+    co = Owner(original_image)
