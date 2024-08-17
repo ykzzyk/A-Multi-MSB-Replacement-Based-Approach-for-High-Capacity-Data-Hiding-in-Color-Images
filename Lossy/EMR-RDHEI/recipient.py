@@ -14,7 +14,7 @@ class Receiver:
     def __init__(self, image, original_image):
         self.original_image = original_image
         self.extract_info(image)
-        self.recipient('key1')
+        self.recipient('key1&key2')
 
     def extract_info(self, image):
         # Seperate the original image channels
@@ -87,6 +87,7 @@ class Receiver:
         if key == 'key1':
             self.image_reconstruction('../../Output/EMR/EMR_RDHEI.ppm')
             eval.skimage_psnr(self.original_image, '../../Output/EMR/EMR_R.ppm')
+            eval.skimage_ssim(self.original_image, '../../Output/EMR/EMR_R.ppm')
 
         elif key == 'key2':
             self.extract_message(self.r, self.r_msb, self.r_location_map)
@@ -102,7 +103,7 @@ class Receiver:
             # Reconstruct image
             self.image_reconstruction('../../Output/EMR/EMR_RDHEI.ppm')
             eval.skimage_psnr(self.original_image, '../../Output/EMR/EMR_R.ppm')
-
+            eval.skimage_ssim(self.original_image, '../../Output/EMR/EMR_R.ppm')
 
 if __name__ == '__main__':
     rc = Receiver('../../Output/EMR/EMR_RDHEI.ppm', content_owner.original_image)

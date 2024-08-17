@@ -55,7 +55,7 @@ def skimage_ssim(sample, contrast):
     contrast_data = Image.open(contrast)
     contrast_arr = np.array(contrast_data)
 
-    ssim = metrics.structural_similarity(sample_arr, contrast_arr, data_range=sample_arr)
+    ssim = metrics.structural_similarity(sample_arr, contrast_arr, data_range=1, multichannel=True, win_size=3)
     print(f"The Structural SIMilarity is: {ssim}")
     return ssim
 

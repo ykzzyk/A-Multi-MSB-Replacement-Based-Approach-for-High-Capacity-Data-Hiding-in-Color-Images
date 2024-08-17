@@ -1,13 +1,13 @@
 from PIL import Image  # Import Image from Pillow mudule
 import numpy as np  # Import Numpy
+import pickle
 import sys
 
 sys.path.append('../../')
 import util
 from operator import xor
 
-original_image = '../../RGB/lena.ppm'
-
+original_image = '../../RGB/beeflowr.ppm'
 
 class Owner:
     def __init__(self, image):
@@ -62,12 +62,50 @@ class Owner:
         # Seperate the original image channels
         r, g, b = util.sepearte_RGB_channels(image)
 
-        r_dec, r_msb, r_location_map = self.find_optimal_msb(r)
-        g_dec, g_msb, g_location_map = self.find_optimal_msb(g)
-        b_dec, b_msb, b_location_map = self.find_optimal_msb(b)
+        try:
+            with open('content_owner.pickle', 'rb') as content_owner:
+                data = pickle.load(content_owner)
+        except FileNotFoundError:
+            with open('content_owner.pickle', 'wb') as content_owner:
+                pickle.dump('None', content_owner, protocol=pickle.HIGHEST_PROTOCOL)
+                data = pickle.load(content_owner)
+
+        if original_image not in data:
+            r_dec, r_msb, r_location_map = self.find_optimal_msb(r)
+            g_dec, g_msb, g_location_map = self.find_optimal_msb(g)
+            b_dec, b_msb, b_location_map = self.find_optimal_msb(b)
+            data = {original_image: {
+                'r_dec': r_dec,
+                'r_msb': r_msb,
+                'r_location_map': r_location_map,
+
+                'g_dec': g_dec,
+                'g_msb': g_msb,
+                'g_location_map': g_location_map,
+
+                'b_dec': b_dec,
+                'b_msb': b_msb,
+                'b_location_map': b_location_map, }
+            }
+            with open('content_owner.pickle', 'wb') as content_owner:
+                pickle.dump(data, content_owner, protocol=pickle.HIGHEST_PROTOCOL)
+
+        else:
+            r_dec = data[original_image]['r_dec']
+            r_msb = data[original_image]['r_msb']
+            r_location_map = data[original_image]['r_location_map']
+
+            g_dec = data[original_image]['g_dec']
+            g_msb = data[original_image]['g_msb']
+            g_location_map = data[original_image]['g_location_map']
+
+            b_dec = data[original_image]['b_dec']
+            b_msb = data[original_image]['b_msb']
+            b_location_map = data[original_image]['b_location_map']
 
         max_dec = r_dec + g_dec + b_dec
         bpp = max_dec / (512 * 512)
+        print(f'r_msb: {r_msb}, g_msb: {g_msb}, b_msb: {b_msb}')
         print(f'The maximum Data Embedding Capacity is {max_dec} bits, and the bpp is {bpp}')
 
         # Encrypted image
@@ -76,19 +114,6 @@ class Owner:
         pixels = pixels.reshape(512, 512, 3)
         img = Image.fromarray(np.uint8(pixels)).convert('RGB')
         img.save('../../Output/EMR/EMR_EI.ppm')
-
-        '''
-        # Decryption
-        pxs = np.array(Image.open('EMR_EI.ppm').convert('RGB').getdata())
-        keystream = util.load_key1()
-        for idx in range(0, 512 * 512):
-            pxs[idx] = list(map(xor, pxs[idx], keystream[idx]))
-
-        pxs = pxs.reshape(512, 512, 3)
-        img = Image.fromarray(np.uint8(pxs)).convert('RGB')
-        img.show()
-        img.save('Decrypted_EMR_EI.ppm')
-        '''
 
         # Seperate the encrypted image channels
         e_r, e_g, e_b = util.sepearte_RGB_channels('../../Output/EMR/EMR_EI.ppm')
